@@ -40,6 +40,13 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   font-weight: 800;
   letter-spacing: .16em;
 }
+.brand-line { display: flex; align-items: center; gap: 9px; }
+.app-version {
+  color: var(--muted);
+  font-family: "Cascadia Mono", "Consolas", monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .04em;
+}
 h1, h2, h3, p { margin-top: 0; }
 h1 { margin-bottom: 0; font-size: 28px; letter-spacing: -.04em; }
 h2 { margin-bottom: 0; font-size: 22px; }

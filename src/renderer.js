@@ -1379,6 +1379,8 @@ $("#photoFile").addEventListener("change", () => {
 
 (async function init() {
   const version = await window.desktop.getAppVersion();
+  $("#appVersion").textContent = `v${version}`;
+  $("#aboutAppVersion").textContent = `v${version}`;
   applySettings(await window.desktop.getSettings());
   updateFeishuAuthUi(await window.desktop.getFeishuAuthStatus());
   renderPreview();
