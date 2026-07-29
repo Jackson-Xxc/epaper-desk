@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-1e654c.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Windows-10%20%2F%2011-1e654c.svg)](#兼容性)
 [![Electron](https://img.shields.io/badge/Electron-37-1e654c.svg)](package.json)
-[![Check](https://github.com/2453169250/epaper-desk/actions/workflows/check.yml/badge.svg)](https://github.com/2453169250/epaper-desk/actions/workflows/check.yml)
+[![Check](https://github.com/Jackson-Xxc/epaper-desk/actions/workflows/check.yml/badge.svg)](https://github.com/Jackson-Xxc/epaper-desk/actions/workflows/check.yml)
 
 为 4.2 英寸 `AESL0420C / nRF52811` 黑白红电子价签制作的 Windows 桌面控制程序。
 它把飞书排班、任务、Codex 周额度和节假日倒数整理成 400 × 300 的三色桌面信息屏，
