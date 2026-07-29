@@ -15,6 +15,46 @@
 
 ![400×300 黑白红屏幕预览](docs/images/screen-preview.png)
 
+## 内容模式
+
+“内容”页可以随时切换 5 种主内容，底部七日排班和顶部 Codex 周额度保持显示。
+
+![主内容模式切换菜单](docs/images/content-mode-menu.png)
+
+### 今日日程
+
+![今日日程模式](docs/images/mode-agenda.png)
+
+### 任务清单
+
+按创建时间倒序显示最新的未完成任务。
+
+![任务清单模式](docs/images/mode-tasks.png)
+
+### 休假倒数
+
+显示下一次休息、最近法定假日和下一次长假。
+
+![休假倒数模式](docs/images/mode-countdown.png)
+
+### 自定义便签
+
+![自定义便签模式](docs/images/mode-note.png)
+
+### 图片展示
+
+支持导入 JPG、PNG、WebP，调整缩放与位置后自动转换为黑、白、红三色。
+
+![图片展示模式](docs/images/mode-photo.png)
+
+### 飞书与 Codex 数据源
+
+![飞书日历与任务配置](docs/images/content-feishu.png)
+
+![Codex 周额度配置](docs/images/content-codex.png)
+
+> 文档截图均使用虚构的示例日程、任务和原创几何图片，不包含个人信息或登录凭据。
+
 ## 功能
 
 - 400 × 300 黑白红像素预览、PNG 导出与图片三色化。
