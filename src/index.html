@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>墨水屏桌面</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="android.css" />
+    <script src="android-adapter.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">EPAPER DESK</p>
+        <h1>墨水屏桌面</h1>
+      </div>
+      <div id="connectionPill" class="status-pill"><i></i><span>设备未连接</span></div>
+    </header>
+
+    <main class="layout">
+      <section class="preview-panel">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">400 × 300 / BLACK · WHITE · RED</p>
+            <h2>屏幕预览</h2>
+          </div>
+          <div class="preview-actions">
+            <span class="tri-color-key"><i class="black"></i><i class="white"></i><i class="red"></i>三色模拟</span>
+            <button id="refreshPreview" class="ghost">重新生成</button>
+          </div>
+        </div>
+        <div class="canvas-shell">
+          <canvas id="epaperCanvas" width="400" height="300"></canvas>
+        </div>
+        <div class="sync-row">
+          <div>
+            <span class="sync-label">下次自动同步</span>
+            <strong id="nextSync">未启用</strong>
+          </div>
+          <button id="sendImage" class="primary" disabled>发送到墨水屏</button>
+        </div>
+      </section>
+
+      <aside class="controls">
+        <nav class="tabs">
+          <button class="tab active" data-tab="device">设备</button>
+          <button class="tab" data-tab="content">内容</button>
+          <button class="tab" data-tab="settings">设置</button>
+          <button class="tab" data-tab="advanced">高级</button>
+        </nav>
+
+        <section class="tab-page active" data-page="device">
+          <div class="card">
+            <div class="card-title">
+              <span class="icon">⌁</span>
+              <div><h3>蓝牙设备</h3><p>nRF52 · EPD-nRF5</p></div>
+            </div>
+            <button id="connectButton" class="primary full">选择并连接设备</button>
+            <button id="nativeSendImage" class="secondary full" hidden>Windows 原生 BLE 发送（实验）</button>
+            <div class="button-grid">
+              <button id="clearScreen" class="secondary" disabled>清空屏幕</button>
+              <button id="sleepDevice" class="secondary" disabled>设备休眠</button>
+              <button id="disconnectButton" class="secondary" disabled>断开连接</button>
+              <button id="syncTime" class="secondary" disabled>同步时间</button>
+              <button id="toggleLed" class="secondary" disabled>指示灯：关</button>
+            </div>
+          </div>
+          <div class="card log-card">
+            <div class="card-title compact"><h3>运行记录</h3><button id="clearLog" class="text-button">清空</button></div>
+            <div id="log" class="log"></div>
+          </div>
+        </section>
+
+        <section class="tab-page" data-page="content">
+          <div class="card">
+            <div class="card-title"><span class="icon">屏</span><div><h3>主内容</h3><p>替换“今日日程”区域</p></div></div>
+            <label>显示内容
+              <div class="custom-select" id="displayModeControl">
+                <button type="button" id="displayModeButton" class="select-button" aria-expanded="false">
+                  <span>今日日程</span><i></i>
+                </button>
+                <div id="displayModeMenu" class="select-menu" hidden>
+                  <button type="button" data-value="agenda">今日日程</button>
+                  <button type="button" data-value="tasks">任务清单</button>
+                  <button type="button" data-value="countdown">休假倒数</button>
+                  <button type="button" data-value="note">自定义便签</button>
+                  <button type="button" data-value="photo">图片展示</button>
+                </div>
+              </div>
+              <select id="displayMode" class="visually-hidden" tabindex="-1" aria-hidden="true">
+                <option value="agenda">今日日程</option>
+                <option value="tasks">任务清单</option>
+                <option value="countdown">休假倒数</option>
+                <option value="note">自定义便签</option>
+                <option value="photo">图片展示</option>
+              </select>
+            </label>
+            <p id="countdownHint" class="hint" hidden>休息日优先采用飞书排班；法定假日采用国务院公布的 2026 年安排。</p>
+            <label id="customNoteLabel">便签文字
+              <textarea id="customNote" rows="3" maxlength="80" placeholder="输入要留在墨水屏上的文字"></textarea>
+            </label>
+            <div id="photoControls" class="photo-controls" hidden>
+              <label class="file-button">选择图片
+                <input id="photoFile" type="file" accept="image/png,image/jpeg,image/webp" hidden />
+              </label>
+              <p id="photoState" class="hint">支持 JPG、PNG、WebP，自动转换为黑白红三色。</p>
+              <label class="range-label"><span>缩放</span><strong id="photoZoomValue">100%</strong></label>
+              <input id="photoZoom" type="range" min="100" max="300" value="100" />
+              <label class="range-label"><span>左右位置</span></label>
+              <input id="photoX" type="range" min="-100" max="100" value="0" />
+              <label class="range-label"><span>上下位置</span></label>
+              <input id="photoY" type="range" min="-100" max="100" value="0" />
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title"><span class="icon">飞</span><div><h3>飞书日历与任务</h3><p>读取排班、日程和最新任务</p></div></div>
+            <button id="feishuLogin" class="primary full">登录飞书</button>
+            <button id="feishuLogout" class="secondary full" hidden>退出飞书登录</button>
+            <p id="calendarState" class="hint" aria-live="polite">尚未读取日历</p>
+            <details class="advanced">
+              <summary>应用配置 / 临时 Token 方式</summary>
+              <label>飞书 App ID
+                <input id="feishuAppId" placeholder="cli_xxxxxxxxxxxxxxxx" autocomplete="off" />
+              </label>
+              <label>飞书 App Secret
+                <input id="feishuAppSecret" type="password" placeholder="仅加密保存在本机" autocomplete="new-password" />
+              </label>
+              <label>OAuth 回调地址
+                <input id="feishuRedirectUri" value="http://127.0.0.1:37691/feishu/oauth/callback" readonly />
+              </label>
+              <p class="hint">首次使用时，把上面的完整回调地址加入飞书应用“安全设置”，并开通
+                <span class="mono">calendar:calendar:readonly</span>、
+                <span class="mono">task:tasklist:read</span> 与
+                <span class="mono">offline_access</span> 用户权限，发布应用后再登录。
+              </p>
+              <label>user_access_token（不是飞书密码）<input id="feishuToken" type="password" placeholder="u-xxxxxxxx" /></label>
+              <label>日历 ID（留空自动读取主日历和排班日历）<input id="calendarId" placeholder="feishu.cn_...@group.calendar.feishu.cn" /></label>
+              <label>任务清单名称<input id="taskListName" value="产品建模需求排期任务清单" /></label>
+              <div class="button-grid">
+                <button id="loadCalendar" class="secondary">读取飞书数据</button>
+                <button id="feishuHelp" class="secondary">配置帮助</button>
+              </div>
+            </details>
+          </div>
+          <div class="card">
+            <div class="card-title"><span class="icon">C</span><div><h3>Codex 周限额</h3><p>本机自动读取 · 手动后备</p></div></div>
+            <button id="loadCodexQuota" class="primary full">从本机 Codex 自动读取</button>
+            <label class="switch-row"><span>启动时自动读取（实验）</span><input id="codexAuto" type="checkbox" checked /></label>
+            <label class="range-label"><span>剩余比例</span><strong id="quotaValue">100%</strong></label>
+            <input id="codexRemaining" type="range" min="0" max="100" value="100" />
+            <label>重置时间<input id="codexResetAt" type="datetime-local" /></label>
+            <p id="codexState" class="hint">自动读取使用本机 Codex 登录和非公开接口；失败时保留手动数据。</p>
+          </div>
+        </section>
+
+        <section class="tab-page" data-page="settings">
+          <div class="card">
+            <h3>自动同步</h3>
+            <label>日历检查间隔（分钟）<input id="refreshMinutes" type="number" min="15" max="1440" value="60" /></label>
+            <label class="switch-row"><span>仅内容变化时刷新墨水屏</span><input id="onlyChanged" type="checkbox" checked /></label>
+            <label class="switch-row"><span>发送成功后自动断开蓝牙（省电）</span><input id="autoDisconnect" type="checkbox" checked /></label>
+            <button id="saveSettings" class="primary full">保存设置</button>
+          </div>
+          <div class="card">
+            <h3>关于这块屏</h3>
+            <dl>
+              <div><dt>设备</dt><dd>AESL0420C / nRF52811</dd></div>
+              <div><dt>分辨率</dt><dd>400 × 300</dd></div>
+              <div><dt>颜色</dt><dd>黑 / 白 / 红</dd></div>
+            </dl>
+          </div>
+        </section>
+
+        <section class="tab-page" data-page="advanced">
+          <div class="card">
+            <div class="card-title"><span class="icon">&lt;/&gt;</span><div><h3>开发者模式</h3><p>EPD-nRF5 原始控制</p></div></div>
+            <dl>
+              <div><dt>设备</dt><dd id="debugDeviceName">未连接</dd></div>
+              <div><dt>固件</dt><dd id="debugFirmware">未知</dd></div>
+              <div><dt>Service</dt><dd class="mono">62750001…5aec</dd></div>
+              <div><dt>Characteristic</dt><dd class="mono">62750002…5aec</dd></div>
+            </dl>
+          </div>
+          <div class="card">
+            <h3>常用命令</h3>
+            <div class="button-grid">
+              <button id="debugInit" class="secondary debug-command" disabled>初始化屏幕</button>
+              <button id="debugRefresh" class="secondary debug-command" disabled>触发刷新</button>
+              <button id="debugPanelSleep" class="secondary debug-command" disabled>面板休眠</button>
+              <button id="debugReset" class="secondary debug-command" disabled>系统重启</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>发送十六进制命令</h3>
+            <label>HEX 数据<input id="rawHex" class="mono" placeholder="例如：91 或 20 00 00 00 00" /></label>
+            <button id="sendRawHex" class="primary full debug-command" disabled>发送原始命令</button>
+            <p class="hint warning">原始命令可能修改设备配置或触发重启，请确认字节内容后再发送。</p>
+          </div>
+          <div class="card">
+            <h3>预览工具</h3>
+            <button id="exportPreview" class="secondary full">导出当前 400×300 PNG</button>
+          </div>
+        </section>
+      </aside>
+    </main>
+
+    <dialog id="bluetoothDialog">
+      <div class="dialog-head"><h3>选择蓝牙设备</h3><button id="closeBluetooth" class="text-button">取消</button></div>
+      <p class="hint">请让墨水屏保持唤醒并靠近电脑。</p>
+      <div id="bluetoothDevices" class="device-list"><div class="scanning">正在扫描附近设备…</div></div>
+    </dialog>
+
+    <script src="renderer.js"></script>
+  </body>
+</html>

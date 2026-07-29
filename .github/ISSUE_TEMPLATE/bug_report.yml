@@ -1,0 +1,49 @@
+name: Bug report
+description: 报告可复现的问题
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请先删除日志中的 token、日历 ID、任务内容和个人信息。
+  - type: input
+    id: version
+    attributes:
+      label: 软件版本
+      placeholder: 例如 0.6.13
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Windows 与蓝牙环境
+      placeholder: Windows 11 24H2 / Intel AX210 / MTU 244
+    validations:
+      required: true
+  - type: input
+    id: hardware
+    attributes:
+      label: 屏幕与固件
+      placeholder: AESL0420C / EPD-nRF5 / NRF_EPD
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 从启动软件开始，按顺序写出操作。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期与实际结果
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 脱敏日志
+      render: text

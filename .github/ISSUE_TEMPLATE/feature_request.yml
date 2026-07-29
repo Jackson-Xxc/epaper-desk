@@ -1,0 +1,24 @@
+name: Feature request
+description: 建议新的显示方式、设备适配或功能
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 使用场景
+      description: 请先说明目前遇到的具体限制。
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议方案
+    validations:
+      required: true
+  - type: input
+    id: hardware
+    attributes:
+      label: 相关硬件或固件
+      placeholder: 如与设备无关可留空

@@ -1,0 +1,66 @@
+{
+  "name": "epaper-desk",
+  "version": "0.6.13",
+  "description": "4.2 寸 nRF52 墨水屏桌面控制台",
+  "main": "src/main.js",
+  "author": "2453169250",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/2453169250/epaper-desk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/2453169250/epaper-desk/issues"
+  },
+  "homepage": "https://github.com/2453169250/epaper-desk#readme",
+  "keywords": [
+    "electron",
+    "e-paper",
+    "epd",
+    "bluetooth-low-energy",
+    "feishu",
+    "nrf52"
+  ],
+  "scripts": {
+    "start": "electron .",
+    "native:build": "node scripts/build-native-ble.js",
+    "check": "node --check src/main.js && node --check src/preload.js && node --check src/renderer.js",
+    "pack": "node scripts/build-native-ble.js && node scripts/build-portable.js"
+  },
+  "devDependencies": {
+    "electron": "37.2.3",
+    "electron-builder": "26.0.12"
+  },
+  "build": {
+    "appId": "cn.epaperdesk.app",
+    "productName": "墨水屏桌面",
+    "asar": true,
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json",
+      "README.md"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "extraResources": [
+      {
+        "from": "native/bin/NativeBleHelper.exe",
+        "to": "native/NativeBleHelper.exe"
+      }
+    ],
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "EPaper-Desk-${version}-portable.${ext}"
+    }
+  }
+}

@@ -1,0 +1,150 @@
+.android-app body {
+  min-width: 0;
+  min-height: 100vh;
+  padding-bottom: env(safe-area-inset-bottom);
+  overscroll-behavior: none;
+}
+
+.android-app .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: calc(14px + env(safe-area-inset-top)) 16px 12px;
+  background: rgba(243, 244, 239, .96);
+  backdrop-filter: blur(14px);
+}
+
+.android-app .topbar h1 {
+  font-size: 23px;
+}
+
+.android-app .topbar .eyebrow {
+  font-size: 9px;
+}
+
+.android-app .status-pill {
+  max-width: 48%;
+  padding: 8px 10px;
+  font-size: 11px;
+}
+
+.android-app .layout {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 12px;
+}
+
+.android-app .preview-panel,
+.android-app .controls {
+  width: 100%;
+  min-width: 0;
+  border-radius: 18px;
+}
+
+.android-app .preview-panel {
+  padding: 16px;
+}
+
+.android-app .section-heading {
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.android-app .section-heading h2 {
+  font-size: 20px;
+}
+
+.android-app .preview-actions {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 7px;
+}
+
+.android-app .canvas-shell {
+  min-height: 0;
+  aspect-ratio: 4 / 3;
+  padding: 12px;
+  border-radius: 14px;
+}
+
+.android-app #epaperCanvas {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.android-app .sync-row {
+  gap: 10px;
+}
+
+.android-app .sync-row .primary {
+  min-width: 142px;
+}
+
+.android-app .controls {
+  height: auto;
+  max-height: none;
+  overflow: visible;
+}
+
+.android-app .tabs {
+  position: sticky;
+  top: calc(69px + env(safe-area-inset-top));
+  z-index: 30;
+  background: #fff;
+}
+
+.android-app .tab {
+  padding: 15px 4px;
+  font-size: 13px;
+}
+
+.android-app .tab-page {
+  padding: 14px 12px 22px;
+}
+
+.android-app .card {
+  padding: 16px;
+  border-radius: 14px;
+}
+
+.android-app button,
+.android-app input,
+.android-app textarea,
+.android-app summary {
+  min-height: 44px;
+}
+
+.android-app input[type="checkbox"],
+.android-app input[type="range"] {
+  min-height: initial;
+}
+
+.android-app dialog {
+  width: calc(100% - 28px);
+  max-width: 440px;
+}
+
+.android-app .log {
+  height: 180px;
+}
+
+.android-app #nativeSendImage {
+  display: none !important;
+}
+
+@media (max-width: 390px) {
+  .android-app .tri-color-key {
+    display: none;
+  }
+
+  .android-app .sync-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .android-app .sync-row .primary {
+    width: 100%;
+  }
+}

@@ -1,0 +1,19 @@
+node_modules/
+.pnpm-store/
+release/
+*-preview.png
+!docs/images/*-preview.png
+native/bin/
+PROJECT_HANDOFF.md
+
+# Local/generated demo artwork is intentionally not distributed.
+assets/东方Project-*.png
+assets/三色山水演示.png
+assets/三色二次元科技演示.png
+
+# Local editor and operating-system files.
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log

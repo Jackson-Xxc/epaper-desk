@@ -1,0 +1,9 @@
+packages:
+  - "."
+
+blockExoticSubdeps: false
+strictDepBuilds: false
+allowBuilds:
+  electron: true
+  app-builder-bin: true
+  electron-winstaller: set this to true or false
