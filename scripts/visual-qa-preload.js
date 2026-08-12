@@ -14,6 +14,7 @@ let settings = {
   refreshMinutes: 60,
   onlyChanged: true,
   autoDisconnect: true,
+  transferPreset: "auto",
   ledEnabled: false,
   feishuToken: "",
   feishuAppId: "",
@@ -25,7 +26,7 @@ let settings = {
 };
 
 contextBridge.exposeInMainWorld("desktop", {
-  getAppVersion: async () => "0.6.14",
+  getAppVersion: async () => "0.6.19",
   getSettings: async () => settings,
   setSettings: async (patch) => {
     settings = { ...settings, ...patch };

@@ -17,6 +17,49 @@ const LED_CONFIG = {
   on: [0x90, 0x14, 0x13, 0x06, 0x05, 0x04, 0x03, 0x02, 0x02, 0xff, 0x12, 0x07, 0x01, 0x00],
   off: [0x90, 0x14, 0x13, 0x06, 0x05, 0x04, 0x03, 0x02, 0x02, 0xff, 0xff, 0x07, 0x01, 0x00],
 };
+const TRANSFER_PRESETS = {
+  auto: {
+    label: "自动",
+    dataBytes: 160,
+    intervalMs: 25,
+    confirmEvery: 6,
+    confirmPauseMs: 150,
+    hint: "Windows 受控窗口：连续 6 包后确认，防止数据塞满蓝牙队列。",
+  },
+  fast: {
+    label: "快速",
+    dataBytes: 198,
+    intervalMs: 8,
+    confirmEvery: 20,
+    confirmPauseMs: 60,
+    hint: "198 字节分包，连续 20 包后确认；只适合稳定的蓝牙环境。",
+  },
+  balanced: {
+    label: "均衡",
+    dataBytes: 160,
+    intervalMs: 25,
+    confirmEvery: 6,
+    confirmPauseMs: 150,
+    hint: "160 字节分包，连续 6 包后确认；默认推荐。",
+  },
+  stable: {
+    label: "稳定",
+    dataBytes: 120,
+    intervalMs: 40,
+    confirmEvery: 3,
+    confirmPauseMs: 200,
+    hint: "120 字节分包，连续 3 包后确认；用于偶发断链。",
+  },
+  extreme: {
+    label: "极稳",
+    dataBytes: 80,
+    intervalMs: 70,
+    confirmEvery: 1,
+    confirmPauseMs: 250,
+    hint: "80 字节分包，无响应与确认写入交替；速度最慢、队列最短。",
+  },
+};
+const AUTO_TRANSFER_SEQUENCE = ["balanced", "stable", "extreme", "extreme"];
 
 // 国务院办公厅国办发明电〔2025〕7号公布的 2026 年放假调休安排。
 // Future years stay deliberately absent until the official notice is published.
@@ -113,6 +156,15 @@ function syncDisplayModeControl() {
 function closeDisplayModeMenu() {
   $("#displayModeMenu").hidden = true;
   $("#displayModeButton").setAttribute("aria-expanded", "false");
+}
+
+function getTransferPreset(key = $("#transferPreset")?.value) {
+  return TRANSFER_PRESETS[key] || TRANSFER_PRESETS.auto;
+}
+
+function updateTransferPresetHint() {
+  const preset = getTransferPreset();
+  $("#transferPresetHint").textContent = preset.hint;
 }
 
 function formatTime(timestamp) {
@@ -614,6 +666,9 @@ async function saveSettings() {
     refreshMinutes: Math.max(15, Number($("#refreshMinutes").value) || 60),
     onlyChanged: $("#onlyChanged").checked,
     autoDisconnect: $("#autoDisconnect").checked,
+    transferPreset: TRANSFER_PRESETS[$("#transferPreset").value]
+      ? $("#transferPreset").value
+      : "auto",
     ledEnabled: state.settings?.ledEnabled === true,
   });
   scheduleAutoSync();
@@ -649,6 +704,10 @@ function applySettings(settings) {
   $("#refreshMinutes").value = settings.refreshMinutes || 60;
   $("#onlyChanged").checked = settings.onlyChanged !== false;
   $("#autoDisconnect").checked = settings.autoDisconnect !== false;
+  $("#transferPreset").value = TRANSFER_PRESETS[settings.transferPreset]
+    ? settings.transferPreset
+    : "auto";
+  updateTransferPresetHint();
   $("#toggleLed").textContent = `指示灯：${settings.ledEnabled ? "开" : "关"}`;
 }
 
@@ -749,8 +808,30 @@ function handleNotifications(event) {
   const mtuMatch = message.match(/^mtu=(\d+)$/i);
   if (mtuMatch) {
     state.mtu = Math.max(20, Math.min(512, Number(mtuMatch[1])));
-    log(`设备协商 MTU：${state.mtu}，将按固件协议使用 ${state.mtu - 2} 字节图像块`);
+    log(`设备协商 MTU：${state.mtu}，图像分包不会超过 ${state.mtu - 2} 字节`);
   }
+}
+
+function handleGattDisconnected(event) {
+  if (event?.target !== state.device) return;
+  state.characteristic = null;
+  state.mtu = 244;
+  setConnected(false);
+  log("蓝牙连接已断开");
+}
+
+function bindDeviceDisconnectListener(device) {
+  // requestDevice() may return the same BluetoothDevice object each time.
+  // Replacing the named listener prevents one disconnect from being handled
+  // repeatedly after several reconnects.
+  device.removeEventListener("gattserverdisconnected", handleGattDisconnected);
+  device.addEventListener("gattserverdisconnected", handleGattDisconnected);
+}
+
+async function enableNotifications(characteristic) {
+  await characteristic.startNotifications();
+  characteristic.removeEventListener("characteristicvaluechanged", handleNotifications);
+  characteristic.addEventListener("characteristicvaluechanged", handleNotifications);
 }
 
 async function connectGattWithRetry(device, context = "连接") {
@@ -824,20 +905,14 @@ async function connectDevice() {
     });
     $("#bluetoothDialog").close();
     log(`正在连接 ${device.name || device.id}`);
-    device.addEventListener("gattserverdisconnected", () => {
-      state.characteristic = null;
-      state.mtu = 244;
-      setConnected(false);
-      log("蓝牙连接已断开");
-    });
+    state.device = device;
+    bindDeviceDisconnectListener(device);
     const server = await connectGattWithRetry(device, "设备连接");
     const service = await server.getPrimaryService(SERVICE_UUID);
     const characteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
-    state.device = device;
     state.characteristic = characteristic;
     try {
-      await characteristic.startNotifications();
-      characteristic.addEventListener("characteristicvaluechanged", handleNotifications);
+      await enableNotifications(characteristic);
     } catch {
       log("设备不支持通知，仍可继续发送");
     }
@@ -911,8 +986,7 @@ async function reconnectKnownDevice() {
     const characteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
     state.characteristic = characteristic;
     try {
-      await characteristic.startNotifications();
-      characteristic.addEventListener("characteristicvaluechanged", handleNotifications);
+      await enableNotifications(characteristic);
     } catch {
       log("自动重连成功，但设备通知不可用");
     }
@@ -972,36 +1046,43 @@ function canvasToPlanes() {
   return { black, red };
 }
 
-async function sendPlane(data, firstFlag, planeIndex) {
-  // A 200-byte GATT value (2-byte protocol header + 198 image bytes) is
-  // intentionally below the device's 244-byte ceiling. This costs a few more
-  // packets but shortens each radio operation on noisy 2.4 GHz links.
-  const dataPerPacket = Math.max(18, Math.min(198, state.mtu - 2));
+async function sendPlane(data, firstFlag, planeIndex, preset) {
+  // The negotiated ATT MTU remains controlled by Windows and the peripheral.
+  // This setting only reduces the application payload carried by each GATT
+  // write, which lowers sustained write pressure on unstable adapters.
+  const dataPerPacket = Math.max(18, Math.min(preset.dataBytes, state.mtu - 2));
   let packetIndex = 0;
+  let noResponseRemaining = preset.confirmEvery;
   for (let offset = 0; offset < data.length; offset += dataPerPacket) {
     const first = offset === 0;
     const flag = first ? firstFlag : (firstFlag | 0xf0);
+    const planeName = planeIndex === 0 ? "黑白层" : "红色层";
+    const packet = [COMMAND.WRITE_IMAGE, flag, ...data.slice(offset, offset + dataPerPacket)];
+    const withoutResponse = noResponseRemaining > 0;
     try {
-      await write(
-        [COMMAND.WRITE_IMAGE, flag, ...data.slice(offset, offset + dataPerPacket)],
-      );
+      await write(packet, { withoutResponse });
     } catch (error) {
-      const planeName = planeIndex === 0 ? "黑白层" : "红色层";
+      // The stream protocol has no packet sequence number. Retrying one packet
+      // could duplicate data if the peripheral accepted it but the response was
+      // lost, so failures restart the complete image after reconnecting.
       throw new Error(`${planeName}第 ${packetIndex + 1} 包失败：${error.message}`);
     }
+    if (withoutResponse) noResponseRemaining -= 1;
+    else noResponseRemaining = preset.confirmEvery;
     packetIndex += 1;
-    if (offset === 0 || packetIndex % 8 === 0) {
+    // Without-response writes only mean that Chromium accepted data into its
+    // local queue. Move the visible progress after a confirmed packet so a
+    // fast-growing percentage cannot be mistaken for device-side delivery.
+    if (!withoutResponse) {
       const percent = Math.round(((planeIndex * data.length + offset) / (data.length * 2)) * 100);
       $("#sendImage").textContent = `传输中 ${percent}%`;
     }
-    // Electron on Windows can resolve a confirmed GATT write before the
-    // controller is ready for the next one. A conservative gap prevents the
-    // recurring "GATT operation failed" seen after 10–20 image packets.
-    await new Promise((resolve) => setTimeout(resolve, 80));
+    const pauseMs = withoutResponse ? preset.intervalMs : preset.confirmPauseMs;
+    if (pauseMs > 0) await new Promise((resolve) => setTimeout(resolve, pauseMs));
   }
 }
 
-async function transferImagePlanes(black, red) {
+async function transferImagePlanes(black, red, presetKey = $("#transferPreset")?.value) {
   if (window.isAndroidApp) {
     log(`Android 原生传输：${black.length + red.length} 字节，按 EPD-nRF5 官方分包协议发送`);
     await window.desktop.sendNativeBle({
@@ -1013,10 +1094,17 @@ async function transferImagePlanes(black, red) {
   }
   await write([COMMAND.INIT]);
   await new Promise((resolve) => setTimeout(resolve, 500));
-  log(`Windows 稳定传输：设备 MTU ${state.mtu}，限制单包 200 字节（图像 198 字节），每包确认并间隔 80ms`);
-  await sendPlane(black, 0x0f, 0);
+  const preset = getTransferPreset(presetKey === "auto" ? "balanced" : presetKey);
+  const dataBytes = Math.max(18, Math.min(preset.dataBytes, state.mtu - 2));
+  log(
+    `Windows ${preset.label}传输：设备 MTU ${state.mtu}，`
+      + `单包 ${dataBytes + 2} 字节（图像 ${dataBytes} 字节），`
+      + `连续 ${preset.confirmEvery} 包无响应写入后确认 1 包，`
+      + `包间隔 ${preset.intervalMs}ms，确认后等待 ${preset.confirmPauseMs}ms`,
+  );
+  await sendPlane(black, 0x0f, 0, preset);
   await new Promise((resolve) => setTimeout(resolve, 300));
-  await sendPlane(red, 0x00, 1);
+  await sendPlane(red, 0x00, 1, preset);
   $("#sendImage").textContent = "正在刷新屏幕…";
   await new Promise((resolve) => setTimeout(resolve, 500));
   await write([COMMAND.REFRESH]);
@@ -1046,18 +1134,44 @@ async function sendImage({ onlyIfChanged = false } = {}) {
       return;
     }
     log("开始传输 400×300 三色图像");
-    try {
+    if (window.isAndroidApp) {
       await transferImagePlanes(black, red);
-    } catch (firstError) {
-      if (window.isAndroidApp) throw firstError;
-      log(`首次传输中断，正在重新连接并完整重传：${firstError.message}`, "error");
-      state.characteristic = null;
-      if (state.device?.gatt?.connected) state.device.gatt.disconnect();
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      const reconnected = await reconnectKnownDevice();
-      if (!reconnected) throw firstError;
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      await transferImagePlanes(black, red);
+    } else {
+      const selectedKey = $("#transferPreset").value;
+      const attemptKeys = selectedKey === "auto"
+        ? AUTO_TRANSFER_SEQUENCE
+        : [selectedKey, selectedKey];
+      let lastError;
+      let completed = false;
+      for (let attempt = 0; attempt < attemptKeys.length; attempt += 1) {
+        const presetKey = attemptKeys[attempt];
+        if (attempt > 0) {
+          const preset = getTransferPreset(presetKey);
+          log(
+            `自动恢复：正在重新连接，随后使用${preset.label}档从头重传 `
+              + `${attempt + 1}/${attemptKeys.length}`,
+            "error",
+          );
+          state.characteristic = null;
+          if (state.device?.gatt?.connected) state.device.gatt.disconnect();
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+          const reconnected = await reconnectKnownDevice();
+          if (!reconnected) throw lastError;
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+        try {
+          await transferImagePlanes(black, red, presetKey);
+          completed = true;
+          break;
+        } catch (error) {
+          lastError = error;
+          log(
+            `第 ${attempt + 1}/${attemptKeys.length} 次完整传输中断：${error.message}`,
+            "error",
+          );
+        }
+      }
+      if (!completed) throw lastError || new Error("图像完整传输失败");
     }
     state.lastImageHash = hash;
     log("图像发送完成，墨水屏正在刷新");
@@ -1305,6 +1419,10 @@ $("#feishuHelp").addEventListener("click", () =>
   window.desktop.openExternal("https://open.feishu.cn/document/sso/web-application-end-user-consent/guide"),
 );
 $("#saveSettings").addEventListener("click", saveSettings);
+$("#transferPreset").addEventListener("change", async () => {
+  updateTransferPresetHint();
+  await saveSettings();
+});
 $("#codexRemaining").addEventListener("input", (event) => {
   state.settings.codexSource = "manual";
   $("#quotaValue").textContent = `${event.target.value}%`;

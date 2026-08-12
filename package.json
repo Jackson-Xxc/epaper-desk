@@ -1,6 +1,6 @@
 {
   "name": "epaper-desk",
-  "version": "0.6.14",
+  "version": "0.6.19",
   "description": "4.2 寸 nRF52 墨水屏桌面控制台",
   "main": "src/main.js",
   "author": "Jackson-Xxc",

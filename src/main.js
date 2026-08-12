@@ -55,6 +55,7 @@ const defaults = {
   refreshMinutes: 60,
   onlyChanged: true,
   autoDisconnect: true,
+  transferPreset: "auto",
   ledEnabled: false,
   feishuToken: "",
   feishuAppId: "",
@@ -620,23 +621,28 @@ ipcMain.handle("feishu:events", async (_event, { token, calendarId, from, to }) 
   const calendarKey = (calendar) => calendar.calendar_id || calendar.calendar?.calendar_id || "";
   const isScheduleCalendar = (calendar) => /排班|班表|值班|轮班/.test(calendarName(calendar));
 
-  let targets;
-  if (manualCalendarId) {
-    const matched = calendars.find((calendar) => calendarKey(calendar) === manualCalendarId);
-    targets = [matched || { calendar_id: manualCalendarId, summary: "指定日历" }];
-  } else {
-    let primary = calendars.find((calendar) => calendar.type === "primary");
-    if (!primary) {
-      const primaryResult = await feishuRequest(
-        "https://open.feishu.cn/open-apis/calendar/v4/calendars/primary",
-        accessToken,
-        { method: "POST" },
-      );
-      primary = primaryResult.data?.calendars?.[0]?.calendar
-        || primaryResult.data?.calendars?.[0];
-    }
-    targets = [primary, ...calendars.filter(isScheduleCalendar)].filter(Boolean);
+  let primary = calendars.find((calendar) => calendar.type === "primary");
+  if (!primary) {
+    const primaryResult = await feishuRequest(
+      "https://open.feishu.cn/open-apis/calendar/v4/calendars/primary",
+      accessToken,
+      { method: "POST" },
+    );
+    primary = primaryResult.data?.calendars?.[0]?.calendar
+      || primaryResult.data?.calendars?.[0];
   }
+  // A manually entered calendar is additive. It must not disable automatic
+  // discovery of the primary and schedule calendars, otherwise an old primary
+  // calendar ID silently hides later shift changes such as weekend workdays.
+  const manualCalendar = manualCalendarId
+    ? calendars.find((calendar) => calendarKey(calendar) === manualCalendarId)
+      || { calendar_id: manualCalendarId, summary: "附加日历" }
+    : null;
+  let targets = [
+    primary,
+    ...calendars.filter(isScheduleCalendar),
+    manualCalendar,
+  ].filter(Boolean);
   targets = targets.filter((calendar, index, list) => {
     const id = calendarKey(calendar);
     return id && list.findIndex((item) => calendarKey(item) === id) === index;

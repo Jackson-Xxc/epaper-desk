@@ -134,7 +134,7 @@
                 <span class="mono">offline_access</span> 用户权限，发布应用后再登录。
               </p>
               <label>user_access_token（不是飞书密码）<input id="feishuToken" type="password" placeholder="u-xxxxxxxx" /></label>
-              <label>日历 ID（留空自动读取主日历和排班日历）<input id="calendarId" placeholder="feishu.cn_...@group.calendar.feishu.cn" /></label>
+              <label>附加日历 ID（始终自动读取主日历和排班日历）<input id="calendarId" placeholder="feishu.cn_...@group.calendar.feishu.cn" /></label>
               <label>任务清单名称<input id="taskListName" value="产品建模需求排期任务清单" /></label>
               <div class="button-grid">
                 <button id="loadCalendar" class="secondary">读取飞书数据</button>
@@ -159,6 +159,16 @@
             <label>日历检查间隔（分钟）<input id="refreshMinutes" type="number" min="15" max="1440" value="60" /></label>
             <label class="switch-row"><span>仅内容变化时刷新墨水屏</span><input id="onlyChanged" type="checkbox" checked /></label>
             <label class="switch-row"><span>发送成功后自动断开蓝牙（省电）</span><input id="autoDisconnect" type="checkbox" checked /></label>
+            <label>图像传输稳定性
+              <select id="transferPreset">
+                <option value="auto" selected>自动 · 失败后降档完整重传</option>
+                <option value="fast">快速 · 198 字节 / 20 包确认</option>
+                <option value="balanced">均衡 · 160 字节 / 6 包确认</option>
+                <option value="stable">稳定 · 120 字节 / 3 包确认</option>
+                <option value="extreme">极稳 · 80 字节 / 1 包确认</option>
+              </select>
+            </label>
+            <p id="transferPresetHint" class="hint">Windows 受控窗口：连续 6 包后确认，防止数据塞满蓝牙队列。</p>
             <button id="saveSettings" class="primary full">保存设置</button>
           </div>
           <div class="card">
