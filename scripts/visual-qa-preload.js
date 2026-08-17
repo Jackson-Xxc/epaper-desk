@@ -26,7 +26,7 @@ let settings = {
 };
 
 contextBridge.exposeInMainWorld("desktop", {
-  getAppVersion: async () => "0.6.19",
+  getAppVersion: async () => "0.6.20",
   getSettings: async () => settings,
   setSettings: async (patch) => {
     settings = { ...settings, ...patch };
